@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Менеджер турнира · 200 зł</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prata&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#111318; --ink-2:#1A1D24; --ink-3:#232730; --line:#2E333E; --line-2:#3B424F;
+  --text:#E9E7E2; --text-2:#9AA0AC; --text-3:#666D7A;
+  --c5:#EFEDE7;   --c5-edge:#B9B4A8;   --c5-ink:#111318;
+  --c25:#B8372A;  --c25-edge:#EFEDE7;  --c25-ink:#FFF;
+  --c100:#1C7A4E; --c100-edge:#EFEDE7; --c100-ink:#FFF;
+  --c500:#15181E; --c500-edge:#EFEDE7; --c500-ink:#FFF;
+  --c1000:#25588F;--c1000-edge:#EFEDE7;--c1000-ink:#FFF;
+  --live:#D9A441; --out:#8C4238; --ok:#3E9E6B;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--ink);color:var(--text);font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:15px;line-height:1.6;padding:26px 20px 90px}
+.wrap{max-width:900px;margin:0 auto}
+.mono{font-family:"IBM Plex Mono",monospace}
+
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-3)}
+h1{font-family:"Prata",serif;font-weight:400;font-size:clamp(26px,5.5vw,36px);line-height:1.1;margin:10px 0 0}
+h2{font-family:"Prata",serif;font-weight:400;font-size:clamp(19px,4vw,23px);margin:0}
+section{margin-top:46px}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:11px;margin-bottom:20px}
+.sec-note{color:var(--text-2);font-size:13.5px;margin:8px 0 0;max-width:64ch}
+
+/* ─── ТАБЛО ─── */
+.board{margin-top:24px;border:1px solid var(--line);border-radius:5px;background:linear-gradient(180deg,var(--ink-2),var(--ink));padding:24px 22px 20px}
+.board.is-break{border-color:#3A4A5E;background:linear-gradient(180deg,#1B2430,var(--ink))}
+.board-top{display:flex;justify-content:space-between;align-items:baseline;gap:14px;flex-wrap:wrap}
+.state{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.13em;text-transform:uppercase;color:var(--live)}
+.wallclock{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--text-3);letter-spacing:.06em}
+.blinds{font-family:"Prata",serif;font-size:clamp(40px,11vw,74px);line-height:1;margin:12px 0 2px;letter-spacing:-.01em}
+.blinds .slash{color:var(--text-3);margin:0 .1em}
+.countdown{font-family:"IBM Plex Mono",monospace;font-size:clamp(30px,8vw,52px);line-height:1;font-weight:500;letter-spacing:.02em;margin-top:14px;font-variant-numeric:tabular-nums}
+.countdown.warn{color:var(--live)}
+.upnext{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--text-2);margin-top:8px}
+
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;align-items:center}
+button{font-family:"IBM Plex Mono",monospace;font-size:13px;letter-spacing:.04em;background:var(--ink-3);color:var(--text);border:1px solid var(--line-2);border-radius:4px;padding:9px 15px;cursor:pointer;transition:background .15s,border-color .15s}
+button:hover:not(:disabled){background:#2C313B;border-color:#4A5262}
+button:disabled{opacity:.32;cursor:default}
+button:focus-visible{outline:2px solid var(--live);outline-offset:2px}
+button.primary{background:var(--live);border-color:var(--live);color:#14161A;font-weight:600}
+button.primary:hover{background:#E7B455;border-color:#E7B455}
+button.ghost{background:transparent;border-color:var(--line)}
+button.sm{padding:5px 10px;font-size:12px}
+button.danger{color:#D08A80;border-color:#4A3230}
+button.danger:hover:not(:disabled){background:#2A1E1D;border-color:#6A4340}
+
+.startctl{display:flex;align-items:center;gap:7px;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--text-3);margin-left:auto}
+input[type=date],input[type=time],input[type=text]{background:var(--ink-3);border:1px solid var(--line);color:var(--text);font-family:"IBM Plex Mono",monospace;font-size:13px;padding:8px 10px;border-radius:4px}
+input:focus-visible{outline:2px solid var(--live);outline-offset:1px}
+
+/* ─── МЕТРИКИ ─── */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:10px;margin-top:14px}
+.metric{background:var(--ink-2);border:1px solid var(--line);border-radius:4px;padding:12px 14px}
+.metric .k{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--text-3)}
+.metric .v{font-family:"IBM Plex Mono",monospace;font-size:20px;margin-top:3px;font-variant-numeric:tabular-nums}
+.metric .sub{font-size:11.5px;color:var(--text-3);font-family:"IBM Plex Mono",monospace}
+
+/* ─── ПРИЗЫ ─── */
+.prizes{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.prize{background:var(--ink-2);border:1px solid var(--line);border-radius:4px;padding:15px 16px}
+.prize.first{border-color:#5A4A28;background:linear-gradient(180deg,#211D15,var(--ink-2))}
+.prize .place{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-3)}
+.prize .amt{font-family:"Prata",serif;font-size:31px;line-height:1.25;margin-top:2px}
+.prize.first .amt{color:var(--live)}
+.prize .pct{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--text-3)}
+.prize .who{font-size:13px;color:var(--ok);margin-top:5px;min-height:20px}
+
+/* ─── ИГРОКИ ─── */
+.addbar{display:flex;gap:8px;margin-bottom:16px}
+.addbar input{flex:1;min-width:0}
+.pl{display:grid;gap:7px}
+.p{display:grid;grid-template-columns:26px 1fr auto auto;align-items:center;gap:12px;background:var(--ink-2);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
+.p .idx{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--text-3);text-align:right}
+.p .nm{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p .paid{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--text-2);white-space:nowrap}
+.p .paid em{font-style:normal;color:var(--text-3);font-size:11px}
+.p .acts{display:flex;gap:6px}
+.p.out{opacity:.45}
+.p.out .nm{text-decoration:line-through;text-decoration-color:var(--out)}
+.p.out{border-color:#3A2B29}
+.p .place-tag{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--out);letter-spacing:.06em}
+.p.itm{border-color:#5A4A28}
+.empty{color:var(--text-3);font-size:14px;padding:22px 0;text-align:center;border:1px dashed var(--line);border-radius:4px}
+.badge{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;border-radius:3px;border:1px solid var(--line-2);color:var(--text-3)}
+.badge.open{color:var(--ok);border-color:#2A4A38}
+.badge.closed{color:var(--out);border-color:#4A3230}
+
+/* ─── РАСПИСАНИЕ ─── */
+.sched{border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:26px 60px 1fr auto;align-items:center;gap:12px;padding:10px 10px 10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.row:hover{background:var(--ink-2)}
+.row .mark{width:26px;height:26px;display:grid;place-items:center}
+.row .time{font-family:"IBM Plex Mono",monospace;font-size:13.5px;color:var(--text-2)}
+.row .lv{font-family:"IBM Plex Mono",monospace;font-size:15px}
+.row .bb{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--text-3);text-align:right}
+.row.past{opacity:.32}
+.row.live{background:var(--ink-2);box-shadow:inset 3px 0 0 var(--live)}
+.row.live .time,.row.live .lv{color:var(--live)}
+.row.live .lv{font-weight:600}
+.row.brk{grid-template-columns:26px 60px 1fr}
+.row.brk .lv{font-family:"IBM Plex Sans",sans-serif;font-size:13px;color:var(--text-3);font-style:italic}
+.brk-dot{width:6px;height:6px;border-radius:50%;background:var(--line-2)}
+.button-chip{width:22px;height:22px;border-radius:50%;background:var(--c5);border:1px solid #A9A396;display:grid;place-items:center;font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:600;color:#111318}
+@media (prefers-reduced-motion:no-preference){.row.live .button-chip{animation:breathe 3.6s ease-in-out infinite}}
+@keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(217,164,65,.45)}50%{box-shadow:0 0 0 6px rgba(217,164,65,0)}}
+
+/* ─── ФИШКИ ─── */
+.chip{width:36px;height:36px;border-radius:50%;flex:0 0 auto;position:relative;display:grid;place-items:center;font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:600;box-shadow:0 4px 10px rgba(0,0,0,.4)}
+.chip::before{content:"";position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,var(--face) 0 58%,transparent 58.5%),repeating-conic-gradient(var(--edge) 0 11deg,var(--face) 11deg 30deg);border:1px solid rgba(0,0,0,.5)}
+.chip span{position:relative;z-index:1;color:var(--num)}
+.c5{--face:var(--c5);--edge:var(--c5-edge);--num:var(--c5-ink)}
+.c25{--face:var(--c25);--edge:var(--c25-edge);--num:var(--c25-ink)}
+.c100{--face:var(--c100);--edge:var(--c100-edge);--num:var(--c100-ink)}
+.c500{--face:var(--c500);--edge:var(--c500-edge);--num:var(--c500-ink)}
+.c1000{--face:var(--c1000);--edge:var(--c1000-edge);--num:var(--c1000-ink)}
+.stack{display:grid;gap:8px}
+.stack-row{display:grid;grid-template-columns:36px 1fr auto auto;align-items:center;gap:14px;padding:8px 12px;background:var(--ink-2);border:1px solid var(--line);border-radius:4px}
+.stack-row.reserve{opacity:.5}
+.stack-name{font-size:14px;color:var(--text-2)}
+.stack-qty{font-family:"IBM Plex Mono",monospace;font-size:13.5px;color:var(--text-2)}
+.stack-sum{font-family:"IBM Plex Mono",monospace;font-size:13.5px;min-width:58px;text-align:right}
+.stack-total{display:grid;grid-template-columns:36px 1fr auto auto;gap:14px;padding:11px 12px;border-top:1px solid var(--line);font-family:"IBM Plex Mono",monospace;font-size:13.5px}
+.stack-total span:nth-child(2){font-family:"IBM Plex Sans",sans-serif;color:var(--text-2)}
+.stack-total span:last-child{text-align:right;min-width:58px;color:var(--live)}
+
+ul.rules{list-style:none;padding:0;margin:0;display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+ul.rules li{background:var(--ink);padding:12px 15px;font-size:14px;color:var(--text-2)}
+ul.rules li b{color:var(--text);font-weight:500}
+
+footer{margin-top:54px;padding-top:18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--text-3);letter-spacing:.05em}
+
+@media (max-width:600px){
+  body{padding:20px 13px 70px}
+  .board{padding:18px 15px}
+  .p{grid-template-columns:22px 1fr auto;gap:9px}
+  .p .acts{grid-column:1/-1;justify-content:flex-end;margin-top:2px}
+  .row{grid-template-columns:22px 52px 1fr auto;gap:9px}
+  .row .mark{width:22px}
+  .startctl{margin-left:0;width:100%}
+  .stack-row,.stack-total{grid-template-columns:32px 1fr auto auto;gap:10px}
+  .chip{width:32px;height:32px;font-size:9.5px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="eyebrow" id="eyebrow">Домашний турнир · вход 200&nbsp;зł · докуп 200&nbsp;зł</div>
+  <h1>Менеджер турнира</h1>
+
+  <!-- ТАБЛО -->
+  <div class="board" id="board">
+    <div class="board-top">
+      <div class="state" id="state">Уровень 1</div>
+      <div class="wallclock" id="wallclock">--:--:--</div>
+    </div>
+    <div class="blinds" id="blinds">5<span class="slash">/</span>10</div>
+    <div class="countdown" id="countdown">20:00</div>
+    <div class="upnext" id="upnext">Далее → 10 / 20</div>
+    <div class="controls">
+      <button class="primary" id="playBtn">Старт</button>
+      <button class="ghost sm" id="prevBtn">← уровень</button>
+      <button class="ghost sm" id="nextBtn">уровень →</button>
+      <button class="ghost sm" id="add1Btn">+1 мин</button>
+      <label class="startctl">начало
+        <input type="date" id="startDate" value="2026-08-29">
+        <input type="time" id="startTime" value="18:00" step="60">
+      </label>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="k">В игре</div><div class="v" id="mAlive">0</div><div class="sub" id="mTotal">из 0</div></div>
+      <div class="metric"><div class="k">Банк</div><div class="v" id="mBank">0 зł</div><div class="sub" id="mEntries">0 входов</div></div>
+      <div class="metric"><div class="k">Фишек в игре</div><div class="v" id="mChips">0</div><div class="sub">по 2000 за вход</div></div>
+      <div class="metric"><div class="k">Средний стек</div><div class="v" id="mAvg">—</div><div class="sub" id="mAvgBB">—</div></div>
+    </div>
+  </div>
+
+  <!-- ПРИЗЫ -->
+  <section>
+    <div class="sec-head">
+      <h2>Призовые</h2>
+      <span class="badge mono" id="prizeBadge">50 / 30 / 20</span>
+    </div>
+    <div class="prizes">
+      <div class="prize first"><div class="place">1 место</div><div class="amt" id="p1">0 зł</div><div class="pct">50% банка</div><div class="who" id="w1"></div></div>
+      <div class="prize"><div class="place">2 место</div><div class="amt" id="p2">0 зł</div><div class="pct">30% банка</div><div class="who" id="w2"></div></div>
+      <div class="prize"><div class="place">3 место</div><div class="amt" id="p3">0 зł</div><div class="pct">20% банка</div><div class="who" id="w3"></div></div>
+    </div>
+    <p class="sec-note" id="prizeNote">Банк считается по числу оплаченных входов: каждый вход и каждый докуп — 200&nbsp;зł.</p>
+  </section>
+
+  <!-- ИГРОКИ -->
+  <section>
+    <div class="sec-head">
+      <h2>Игроки</h2>
+      <span class="badge" id="rebuyBadge">Докупы открыты</span>
+    </div>
+    <div class="addbar">
+      <input type="text" id="nameInput" placeholder="Имя игрока" autocomplete="off" maxlength="24">
+      <button class="primary" id="addBtn">Добавить</button>
+    </div>
+    <div class="pl" id="players"></div>
+    <p class="sec-note">Докуп даёт 2000 фишек и добавляет 200&nbsp;зł в банк. Максимум два докупа на игрока. Если вылетевший докупается — он возвращается в игру.</p>
+  </section>
+
+  <!-- РАСПИСАНИЕ -->
+  <section>
+    <div class="sec-head">
+      <h2>Блайнды</h2>
+      <span class="badge mono">20 мин · нажми на строку, чтобы перейти</span>
+    </div>
+    <div class="sched" id="sched"></div>
+  </section>
+
+  <!-- ФИШКИ -->
+  <section>
+    <div class="sec-head"><h2>Стартовый стек</h2><span class="badge mono">200 зł = 2000 фишек</span></div>
+    <div class="stack">
+      <div class="stack-row"><div class="chip c5"><span>5</span></div><div class="stack-name">Белые</div><div class="stack-qty">×10</div><div class="stack-sum">50</div></div>
+      <div class="stack-row"><div class="chip c25"><span>25</span></div><div class="stack-name">Красные</div><div class="stack-qty">×10</div><div class="stack-sum">250</div></div>
+      <div class="stack-row"><div class="chip c100"><span>100</span></div><div class="stack-name">Зелёные</div><div class="stack-qty">×7</div><div class="stack-sum">700</div></div>
+      <div class="stack-row"><div class="chip c500"><span>500</span></div><div class="stack-name">Чёрные</div><div class="stack-qty">×2</div><div class="stack-sum">1000</div></div>
+      <div class="stack-row reserve"><div class="chip c1000"><span>1K</span></div><div class="stack-name">Синие</div><div class="stack-qty">резерв</div><div class="stack-sum">—</div></div>
+      <div class="stack-total"><span>Σ</span><span>29 фишек на игрока</span><span></span><span>2000</span></div>
+    </div>
+  </section>
+
+  <!-- РЕГЛАМЕНТ -->
+  <section>
+    <div class="sec-head"><h2>Регламент</h2></div>
+    <ul class="rules">
+      <li><b>Докуп 200 зł = 2000 фишек.</b> Максимум два раза на игрока, при вылете или когда стек упал ниже 2000.</li>
+      <li><b>Окно докупов закрывается в конце шестого уровня.</b> Последняя раздача доигрывается.</li>
+      <li><b>Состав докупа до пятого уровня:</b> 2×500 + 8×100 + 8×25. Позже — 4×500.</li>
+      <li><b>Столы.</b> Два по шесть, объединяемся когда останется 10 активных.</li>
+      <li><b>Выкуп мелочи.</b> На первом перерыве убираем белые, на втором — красные и вводим синие. Округляем вверх.</li>
+      <li><b>Фишек нужно всего.</b> ~650–700: 120 белых, 220 красных, 180 зелёных, 70 чёрных, 30 синих.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span id="saveHint">Состояние живёт в адресе страницы — обновление вкладки ничего не потеряет</span>
+    <button class="danger sm" id="resetBtn">Сбросить турнир</button>
+  </footer>
+</div>
+
+<script>
+'use strict';
+
+const BUYIN = 200, CHIPS_PER_ENTRY = 2000, MAX_ENTRIES = 3;
+const SPLIT = [0.5, 0.3, 0.2];
+
+const SCHEDULE = [
+  {t:'lv', n:1,  sb:5,    bb:10,   m:20},
+  {t:'lv', n:2,  sb:10,   bb:20,   m:20},
+  {t:'lv', n:3,  sb:15,   bb:30,   m:20},
+  {t:'lv', n:4,  sb:20,   bb:40,   m:20},
+  {t:'lv', n:5,  sb:30,   bb:60,   m:20},
+  {t:'lv', n:6,  sb:40,   bb:80,   m:20},
+  {t:'br', label:'Докупы закрыты · перерыв, выкуп белых', m:15},
+  {t:'lv', n:7,  sb:60,   bb:120,  m:20},
+  {t:'lv', n:8,  sb:100,  bb:200,  m:20},
+  {t:'lv', n:9,  sb:150,  bb:300,  m:20},
+  {t:'lv', n:10, sb:200,  bb:400,  m:20},
+  {t:'lv', n:11, sb:300,  bb:600,  m:20},
+  {t:'br', label:'Перерыв · выкуп красных, вводим синие', m:10},
+  {t:'lv', n:12, sb:400,  bb:800,  m:20},
+  {t:'lv', n:13, sb:600,  bb:1200, m:20},
+  {t:'lv', n:14, sb:1000, bb:2000, m:20},
+  {t:'lv', n:15, sb:1500, bb:3000, m:20},
+  {t:'lv', n:16, sb:2000, bb:4000, m:20}
+];
+
+// абсолютные смещения от начала турнира
+let cum = 0;
+const ITEMS = SCHEDULE.map(s => {
+  const from = cum; cum += s.m * 60000;
+  return Object.assign({}, s, {from, to: cum});
+});
+const REBUY_CLOSE = ITEMS.find(i => i.t === 'br').from;   // конец 6-го уровня
+
+// ── состояние ────────────────────────────────
+let S = {
+  date: '2026-08-29',
+  time: '18:00',
+  players: [],      // {id, name, entries, out, place}
+  elapsed: 0,       // мс, пройдено по расписанию
+  running: false
+};
+let lastTs = null, seq = 1, lastIdx = -1;
+
+const $ = id => document.getElementById(id);
+const nf = n => Math.round(n).toLocaleString('ru-RU').replace(/\u00A0/g, ' ');
+const pad = n => String(n).padStart(2, '0');
+const zl = n => nf(n) + ' зł';
+
+function fmtMS(ms){
+  const s = Math.max(0, Math.round(ms / 1000));
+  return pad(Math.floor(s / 60)) + ':' + pad(s % 60);
+}
+function fmtLong(ms){
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+  if (d > 0) return d + ' д ' + h + ' ч ' + m + ' мин';
+  if (h > 0) return h + ' ч ' + pad(m) + ' мин';
+  return fmtMS(ms);
+}
+function plannedStart(){
+  const [Y, M, D] = S.date.split('-').map(Number);
+  const [h, m] = S.time.split(':').map(Number);
+  return new Date(Y, M - 1, D, h, m, 0, 0).getTime();
+}
+function projected(offset){
+  const base = S.elapsed > 0 || S.running ? Date.now() - S.elapsed : plannedStart();
+  return base + offset;
+}
+function hhmm(ts){ const d = new Date(ts); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function idxAt(ms){
+  for (let i = 0; i < ITEMS.length; i++) if (ms < ITEMS[i].to) return i;
+  return ITEMS.length - 1;
+}
+
+// ── сохранение в адресной строке ─────────────
+function save(){
+  try{
+    const compact = {
+      d: S.date, t: S.time, e: Math.round(S.elapsed), r: S.running ? 1 : 0,
+      p: S.players.map(p => [p.name, p.entries, p.out ? 1 : 0, p.place || 0])
+    };
+    const enc = btoa(unescape(encodeURIComponent(JSON.stringify(compact))));
+    history.replaceState(null, '', '#' + enc);
+  }catch(e){ /* песочница — работаем в памяти */ }
+}
+function load(){
+  try{
+    if (!location.hash || location.hash.length < 3) return;
+    const raw = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(1)))));
+    S.date = raw.d || S.date;
+    S.time = raw.t || S.time;
+    S.elapsed = raw.e || 0;
+    S.running = false;                       // после перезагрузки всегда на паузе
+    S.players = (raw.p || []).map(a => ({ id: seq++, name: a[0], entries: a[1], out: !!a[2], place: a[3] || null }));
+  }catch(e){ /* битый хэш — начинаем с нуля */ }
+}
+
+// ── деньги ───────────────────────────────────
+function totals(){
+  const entries = S.players.reduce((s, p) => s + p.entries, 0);
+  const alive = S.players.filter(p => !p.out).length;
+  return { entries, alive, bank: entries * BUYIN, chips: entries * CHIPS_PER_ENTRY };
+}
+
+// ── звук смены уровня ────────────────────────
+function chime(rising){
+  try{
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    [0, 0.18].forEach((delay, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = rising ? (i ? 784 : 523) : (i ? 392 : 523);
+      g.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
+      g.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + delay + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.34);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime + delay); o.stop(ctx.currentTime + delay + 0.36);
+    });
+    setTimeout(() => ctx.close(), 1200);
+  }catch(e){}
+}
+
+// ── игроки ───────────────────────────────────
+function addPlayer(name){
+  name = name.trim();
+  if (!name) return;
+  S.players.push({ id: seq++, name, entries: 1, out: false, place: null });
+  renderPlayers(); renderMoney(); save();
+}
+function rebuy(id){
+  const p = S.players.find(x => x.id === id);
+  if (!p || p.entries >= MAX_ENTRIES) return;
+  p.entries++;
+  p.out = false; p.place = null;
+  renderPlayers(); renderMoney(); save();
+}
+function toggleOut(id){
+  const p = S.players.find(x => x.id === id);
+  if (!p) return;
+  if (p.out){
+    p.out = false; p.place = null;
+  } else {
+    p.out = true;
+    p.place = S.players.filter(x => !x.out).length + 1;
+  }
+  renderPlayers(); renderMoney(); save();
+}
+function removePlayer(id){
+  S.players = S.players.filter(x => x.id !== id);
+  renderPlayers(); renderMoney(); save();
+}
+
+function renderPlayers(){
+  const el = $('players');
+  el.innerHTML = '';
+  if (!S.players.length){
+    el.innerHTML = '<div class="empty">Пока никого. Впиши имя выше — банк и призовые посчитаются сами.</div>';
+    return;
+  }
+  const alive = S.players.filter(p => !p.out);
+  const out = S.players.filter(p => p.out).sort((a, b) => (a.place || 99) - (b.place || 99));
+  const order = alive.concat(out);
+  const inTheMoney = alive.length <= 3 && alive.length > 0 && S.players.length >= 3;
+
+  order.forEach((p, i) => {
+    const row = document.createElement('div');
+    row.className = 'p' + (p.out ? ' out' : '') + (!p.out && inTheMoney ? ' itm' : '');
+    const paid = p.entries * BUYIN;
+    const tag = p.out && p.place ? '<span class="place-tag">' + p.place + '-е</span>' : '';
+    row.innerHTML =
+      '<div class="idx">' + (i + 1) + '</div>' +
+      '<div class="nm">' + escapeHtml(p.name) + ' ' + tag + '</div>' +
+      '<div class="paid">' + nf(paid) + ' зł <em>· ' + p.entries + ' вх.</em></div>' +
+      '<div class="acts">' +
+        '<button class="sm" data-act="rebuy" data-id="' + p.id + '"' + (p.entries >= MAX_ENTRIES ? ' disabled' : '') + '>+ докуп</button>' +
+        '<button class="sm ' + (p.out ? '' : 'danger') + '" data-act="out" data-id="' + p.id + '">' + (p.out ? 'вернуть' : 'вылетел') + '</button>' +
+        '<button class="sm ghost" data-act="del" data-id="' + p.id + '" title="Убрать из списка">×</button>' +
+      '</div>';
+    el.appendChild(row);
+  });
+}
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderMoney(){
+  const t = totals();
+  $('mAlive').textContent = t.alive;
+  $('mTotal').textContent = 'из ' + S.players.length;
+  $('mBank').textContent = zl(t.bank);
+  $('mEntries').textContent = t.entries + ' ' + plural(t.entries, 'вход', 'входа', 'входов');
+  $('mChips').textContent = nf(t.chips);
+
+  const idx = idxAt(S.elapsed);
+  const cur = ITEMS[idx].t === 'lv' ? ITEMS[idx] : (ITEMS[idx - 1] || ITEMS[0]);
+  if (t.alive > 0){
+    const avg = t.chips / t.alive;
+    $('mAvg').textContent = nf(avg);
+    $('mAvgBB').textContent = Math.round(avg / cur.bb) + ' BB';
+  } else {
+    $('mAvg').textContent = '—';
+    $('mAvgBB').textContent = '—';
+  }
+
+  SPLIT.forEach((share, i) => {
+    $('p' + (i + 1)).textContent = zl(t.bank * share);
+  });
+
+  // кто уже занял 2-е и 3-е места, и кто остался единственным — тот первый
+  const alive = S.players.filter(p => !p.out);
+  const byPlace = p => S.players.find(x => x.place === p);
+  const w1 = alive.length === 1 && S.players.length > 1 ? alive[0] : null;
+  $('w1').textContent = w1 ? w1.name : '';
+  $('w2').textContent = byPlace(2) ? byPlace(2).name : '';
+  $('w3').textContent = byPlace(3) ? byPlace(3).name : '';
+
+  const note = $('prizeNote');
+  if (t.entries === 0){
+    note.textContent = 'Банк считается по числу оплаченных входов: каждый вход и каждый докуп — 200 зł.';
+  } else {
+    const third = t.bank * 0.2;
+    note.textContent = third < 600
+      ? 'Третье место сейчас ' + zl(third) + '. Игрок с двумя докупами вложил 600 зł — предупреди об этом до начала.'
+      : 'Банк ' + zl(t.bank) + ' с ' + t.entries + ' ' + plural(t.entries, 'входа', 'входов', 'входов') + '. Третье место окупает даже два докупа.';
+  }
+}
+function plural(n, a, b, c){
+  const n10 = n % 10, n100 = n % 100;
+  if (n10 === 1 && n100 !== 11) return a;
+  if (n10 >= 2 && n10 <= 4 && (n100 < 10 || n100 >= 20)) return b;
+  return c;
+}
+
+// ── расписание ───────────────────────────────
+function renderSched(){
+  const el = $('sched');
+  el.innerHTML = '';
+  ITEMS.forEach((it, i) => {
+    const row = document.createElement('div');
+    row.className = 'row' + (it.t === 'br' ? ' brk' : '');
+    row.dataset.i = i;
+    row.setAttribute('role', 'button');
+    row.setAttribute('tabindex', '0');
+    row.innerHTML = it.t === 'lv'
+      ? '<div class="mark"></div><div class="time"></div><div class="lv">' + nf(it.sb) + ' / ' + nf(it.bb) + '</div><div class="bb">ур. ' + it.n + '</div>'
+      : '<div class="mark"><div class="brk-dot"></div></div><div class="time"></div><div class="lv">' + it.label + ' · ' + it.m + ' мин</div>';
+    el.appendChild(row);
+  });
+}
+
+// ── тик ──────────────────────────────────────
+function tick(){
+  if (S.running){
+    const now = performance.now();
+    if (lastTs !== null) S.elapsed += now - lastTs;
+    lastTs = now;
+  }
+  const d = new Date();
+  $('wallclock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+
+  const started = S.elapsed > 0 || S.running;
+  const idx = idxAt(S.elapsed);
+  const it = ITEMS[idx];
+  const done = S.elapsed >= ITEMS[ITEMS.length - 1].to;
+
+  if (idx !== lastIdx && started && lastIdx !== -1){
+    chime(it.t === 'lv');
+  }
+  lastIdx = idx;
+
+  // табло
+  const board = $('board');
+  board.classList.toggle('is-break', it.t === 'br' && started && !done);
+
+  if (!started){
+    const left = plannedStart() - Date.now();
+    $('state').textContent = left > 0 ? 'До старта' : 'Готовы начать';
+    $('blinds').innerHTML = '5<span class="slash">/</span>10';
+    $('countdown').textContent = left > 0 ? fmtLong(left) : '20:00';
+    $('countdown').classList.remove('warn');
+    $('upnext').textContent = 'Нажми «Старт», когда сядете за стол';
+  } else if (done){
+    $('state').textContent = 'Расписание закончилось';
+    $('blinds').innerHTML = nf(it.sb) + '<span class="slash">/</span>' + nf(it.bb);
+    $('countdown').textContent = '00:00';
+    $('countdown').classList.remove('warn');
+    $('upnext').textContent = 'Дальше — по договорённости за столом';
+  } else {
+    const left = it.to - S.elapsed;
+    if (it.t === 'lv'){
+      $('state').textContent = 'Уровень ' + it.n;
+      $('blinds').innerHTML = nf(it.sb) + '<span class="slash">/</span>' + nf(it.bb);
+    } else {
+      $('state').textContent = 'Перерыв';
+      $('blinds').innerHTML = '<span class="slash">—</span>';
+    }
+    $('countdown').textContent = fmtMS(left);
+    $('countdown').classList.toggle('warn', left <= 60000);
+    const nx = ITEMS[idx + 1];
+    $('upnext').textContent = nx
+      ? (nx.t === 'lv' ? 'Далее → ' + nf(nx.sb) + ' / ' + nf(nx.bb) : 'Далее → перерыв ' + nx.m + ' мин')
+      : 'Последний уровень';
+  }
+
+  $('playBtn').textContent = S.running ? 'Пауза' : (started ? 'Продолжить' : 'Старт');
+  $('playBtn').classList.toggle('primary', !S.running);
+
+  // окно докупов
+  const open = S.elapsed < REBUY_CLOSE;
+  const rb = $('rebuyBadge');
+  rb.textContent = open ? 'Докупы открыты' : 'Докупы закрыты';
+  rb.className = 'badge ' + (open ? 'open' : 'closed');
+
+  // строки расписания
+  const rows = $('sched').children;
+  for (let i = 0; i < rows.length; i++){
+    const r = rows[i];
+    r.classList.toggle('past', started && i < idx);
+    r.classList.toggle('live', started && i === idx && !done);
+    r.querySelector('.time').textContent = hhmm(projected(ITEMS[i].from));
+    const mk = r.querySelector('.mark');
+    const isLive = started && i === idx && !done;
+    mk.innerHTML = isLive ? '<div class="button-chip">D</div>' : (ITEMS[i].t === 'br' ? '<div class="brk-dot"></div>' : '');
+  }
+}
+
+// ── управление ───────────────────────────────
+function toggleRun(){
+  S.running = !S.running;
+  lastTs = S.running ? performance.now() : null;
+  if (S.running && S.elapsed === 0) lastIdx = 0;
+  save(); tick();
+}
+function jumpTo(i){
+  S.elapsed = ITEMS[i].from;
+  lastIdx = i;
+  save(); renderMoney(); tick();
+}
+function step(dir){
+  const i = idxAt(S.elapsed);
+  const target = Math.min(ITEMS.length - 1, Math.max(0, i + dir));
+  jumpTo(target);
+}
+
+// ── события ──────────────────────────────────
+$('playBtn').addEventListener('click', toggleRun);
+$('prevBtn').addEventListener('click', () => step(-1));
+$('nextBtn').addEventListener('click', () => step(1));
+$('add1Btn').addEventListener('click', () => { S.elapsed = Math.max(0, S.elapsed - 60000); save(); tick(); });
+
+$('addBtn').addEventListener('click', () => { addPlayer($('nameInput').value); $('nameInput').value = ''; $('nameInput').focus(); });
+$('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter'){ addPlayer($('nameInput').value); $('nameInput').value = ''; } });
+
+$('players').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const id = +b.dataset.id;
+  if (b.dataset.act === 'rebuy') rebuy(id);
+  else if (b.dataset.act === 'out') toggleOut(id);
+  else if (b.dataset.act === 'del') removePlayer(id);
+});
+
+$('sched').addEventListener('click', e => {
+  const r = e.target.closest('.row'); if (r) jumpTo(+r.dataset.i);
+});
+$('sched').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' '){
+    const r = e.target.closest('.row');
+    if (r){ e.preventDefault(); jumpTo(+r.dataset.i); }
+  }
+});
+
+$('startDate').addEventListener('change', e => { S.date = e.target.value; save(); tick(); });
+$('startTime').addEventListener('change', e => { S.time = e.target.value; save(); tick(); });
+
+$('resetBtn').addEventListener('click', () => {
+  if (!confirm('Сбросить: удалить всех игроков и обнулить таймер?')) return;
+  S.players = []; S.elapsed = 0; S.running = false; lastTs = null; lastIdx = -1;
+  save(); renderPlayers(); renderMoney(); tick();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space'){ e.preventDefault(); toggleRun(); }
+});
+
+// ── старт ────────────────────────────────────
+load();
+$('startDate').value = S.date;
+$('startTime').value = S.time;
+renderSched();
+renderPlayers();
+renderMoney();
+lastIdx = S.elapsed > 0 ? idxAt(S.elapsed) : -1;
+tick();
+setInterval(() => { tick(); if (S.running) save(); }, 500);
+</script>
+</body>
+</html>
